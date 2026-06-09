@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Latin Dictionary</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f5f0;
+    --surface: #ffffff;
+    --border: #d8d3c8;
+    --border-light: #ece8e0;
+    --text: #1a1814;
+    --text-muted: #6b6559;
+    --text-faint: #9e9890;
+    --accent: #5c3d1e;
+    --accent-light: #f0ebe2;
+    --accent-mid: #8b6240;
+    --pos-bg: #f0ebe2;
+    --pos-text: #5c3d1e;
+    --error-bg: #fdf3f0;
+    --error-text: #8b3520;
+    --error-border: #e8c4b8;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1814;
+      --surface: #242018;
+      --border: #3a3528;
+      --border-light: #2e2a20;
+      --text: #f0ece4;
+      --text-muted: #a09880;
+      --text-faint: #6b6050;
+      --accent: #c49a6c;
+      --accent-light: #2a2318;
+      --accent-mid: #a07848;
+      --pos-bg: #2a2318;
+      --pos-text: #c49a6c;
+      --error-bg: #221510;
+      --error-text: #e09070;
+      --error-border: #4a2518;
+    }
+  }
+
+  body {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 1.5rem 4rem;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .wordmark {
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    font-family: 'Georgia', serif;
+    margin-bottom: 0.5rem;
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: normal;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--accent-mid);
+  }
+
+  .search-wrap {
+    width: 100%;
+    max-width: 520px;
+    position: relative;
+    margin-bottom: 2.5rem;
+  }
+
+  #search-input {
+    width: 100%;
+    padding: 0.8rem 3rem 0.8rem 1.1rem;
+    font-family: 'Georgia', serif;
+    font-size: 1.1rem;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    outline: none;
+    transition: border-color 0.15s;
+    -webkit-appearance: none;
+  }
+
+  #search-input::placeholder { color: var(--text-faint); font-style: italic; }
+  #search-input:focus { border-color: var(--accent-mid); }
+
+  .search-btn {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s;
+  }
+  .search-btn:hover { color: var(--accent); }
+  .search-btn svg { width: 18px; height: 18px; }
+
+  #results {
+    width: 100%;
+    max-width: 520px;
+  }
+
+  .status {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 0.95rem;
+    padding: 1.5rem 0;
+  }
+
+  .entry-header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .entry-word {
+    font-size: 1.75rem;
+    font-weight: normal;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    line-height: 1;
+    margin-bottom: 0.25rem;
+  }
+
+  .entry-meta {
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  .pos-block {
+    margin-bottom: 1.75rem;
+  }
+
+  .pos-label {
+    display: inline-block;
+    font-family: 'Georgia', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--pos-text);
+    background: var(--pos-bg);
+    padding: 2px 8px;
+    border-radius: 2px;
+    margin-bottom: 0.75rem;
+  }
+
+  .def-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .def-item {
+    display: grid;
+    grid-template-columns: 1.5rem 1fr;
+    gap: 0 0.5rem;
+    margin-bottom: 0.6rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  .def-num {
+    color: var(--text-faint);
+    font-size: 0.8rem;
+    padding-top: 0.25rem;
+    text-align: right;
+    user-select: none;
+  }
+
+  .def-text { color: var(--text); }
+
+  .def-text em { color: var(--text-muted); font-style: italic; }
+
+  .examples {
+    margin-top: 0.4rem;
+    padding-left: 0;
+    list-style: none;
+  }
+
+  .example {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-style: italic;
+    padding-left: 0.75rem;
+    border-left: 2px solid var(--border-light);
+    margin-top: 0.3rem;
+    line-height: 1.5;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border-light);
+    margin: 1.5rem 0;
+  }
+
+  .error-box {
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    color: var(--error-text);
+    padding: 1rem 1.25rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  .wikt-link {
+    margin-top: 1.5rem;
+    text-align: center;
+  }
+
+  .wikt-link a {
+    font-size: 0.8rem;
+    color: var(--text-faint);
+    text-decoration: none;
+    letter-spacing: 0.05em;
+  }
+  .wikt-link a:hover { color: var(--accent-mid); text-decoration: underline; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent-mid);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin: 2rem auto;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark">Lexicon</div>
+  <h1>Latin <em>Dictionary</em></h1>
+</header>
+
+<div class="search-wrap">
+  <input
+    id="search-input"
+    type="text"
+    placeholder="Enter a Latin word…"
+    autocomplete="off"
+    autocorrect="off"
+    autocapitalize="none"
+    spellcheck="false"
+    aria-label="Latin word search"
+  />
+  <button class="search-btn" id="search-btn" aria-label="Search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="7"/>
+      <line x1="16.5" y1="16.5" x2="22" y2="22"/>
+    </svg>
+  </button>
+</div>
+
+<div id="results" role="region" aria-live="polite" aria-label="Definition results"></div>
+
+<script>
+const input = document.getElementById('search-input');
+const btn = document.getElementById('search-btn');
+const results = document.getElementById('results');
+
+function stripHtml(html) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+}
+
+function renderDefinitions(word, latinEntries) {
+  const header = document.createElement('div');
+  header.className = 'entry-header';
+  header.innerHTML = `
+    <div class="entry-word">${escHtml(word)}</div>
+    <div class="entry-meta">Latin</div>
+  `;
+  results.appendChild(header);
+
+  latinEntries.forEach((entry, ei) => {
+    if (ei > 0) {
+      const hr = document.createElement('hr');
+      hr.className = 'divider';
+      results.appendChild(hr);
+    }
+
+    const block = document.createElement('div');
+    block.className = 'pos-block';
+
+    const posLabel = document.createElement('span');
+    posLabel.className = 'pos-label';
+    posLabel.textContent = entry.partOfSpeech || 'unknown';
+    block.appendChild(posLabel);
+
+    const ol = document.createElement('ol');
+    ol.className = 'def-list';
+
+    (entry.definitions || []).forEach((def, di) => {
+      const li = document.createElement('li');
+      li.className = 'def-item';
+
+      const num = document.createElement('span');
+      num.className = 'def-num';
+      num.textContent = di + 1;
+
+      const textWrap = document.createElement('div');
+      textWrap.className = 'def-text';
+
+      const defDiv = document.createElement('div');
+      defDiv.innerHTML = def.definition || '';
+      textWrap.appendChild(defDiv);
+
+      if (def.parsedExamples && def.parsedExamples.length) {
+        const exList = document.createElement('ul');
+        exList.className = 'examples';
+        def.parsedExamples.forEach(ex => {
+          const exLi = document.createElement('li');
+          exLi.className = 'example';
+          exLi.innerHTML = ex.example || '';
+          exList.appendChild(exLi);
+        });
+        textWrap.appendChild(exList);
+      } else if (def.examples && def.examples.length) {
+        const exList = document.createElement('ul');
+        exList.className = 'examples';
+        def.examples.forEach(ex => {
+          const exLi = document.createElement('li');
+          exLi.className = 'example';
+          exLi.textContent = stripHtml(ex);
+          exList.appendChild(exLi);
+        });
+        textWrap.appendChild(exList);
+      }
+
+      li.appendChild(num);
+      li.appendChild(textWrap);
+      ol.appendChild(li);
+    });
+
+    block.appendChild(ol);
+    results.appendChild(block);
+  });
+
+  const linkDiv = document.createElement('div');
+  linkDiv.className = 'wikt-link';
+  linkDiv.innerHTML = `<a href="https://en.wiktionary.org/wiki/${encodeURIComponent(word)}#Latin" target="_blank" rel="noopener">View full entry on Wiktionary ↗</a>`;
+  results.appendChild(linkDiv);
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function lookup(word) {
+  const trimmed = word.trim();
+  if (!trimmed) return;
+
+  results.innerHTML = '<div class="spinner"></div>';
+
+  const url = `https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(trimmed)}`;
+
+  let data;
+  try {
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (res.status === 404) {
+      results.innerHTML = '';
+      const errBox = document.createElement('div');
+      errBox.className = 'error-box';
+      errBox.textContent = `No Wiktionary entry found for "${trimmed}". Opening search results…`;
+      results.appendChild(errBox);
+      setTimeout(() => {
+        window.open(`https://en.wiktionary.org/w/index.php?search=${encodeURIComponent(trimmed)}&ns0=1`, '_blank', 'noopener');
+      }, 400);
+      return;
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    data = await res.json();
+  } catch (err) {
+    results.innerHTML = `<div class="error-box">Could not reach Wiktionary. Check your connection and try again.</div>`;
+    return;
+  }
+
+  const latinEntries = data['la'] || data['Latin'] || null;
+
+  results.innerHTML = '';
+
+  if (!latinEntries || latinEntries.length === 0) {
+    const errBox = document.createElement('div');
+    errBox.className = 'error-box';
+    errBox.textContent = `"${trimmed}" exists on Wiktionary but has no Latin entry. Opening search results…`;
+    results.appendChild(errBox);
+    setTimeout(() => {
+      window.open(`https://en.wiktionary.org/w/index.php?search=${encodeURIComponent(trimmed)}&ns0=1`, '_blank', 'noopener');
+    }, 400);
+    return;
+  }
+
+  renderDefinitions(trimmed, latinEntries);
+}
+
+btn.addEventListener('click', () => lookup(input.value));
+input.addEventListener('keydown', e => { if (e.key === 'Enter') lookup(input.value); });
+</script>
+</body>
+</html>
