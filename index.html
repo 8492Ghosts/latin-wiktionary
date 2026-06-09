@@ -241,13 +241,17 @@
     text-align: center;
   }
 
-  .wikt-link a {
+  .wikt-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Georgia', serif;
     font-size: 0.8rem;
     color: var(--text-faint);
-    text-decoration: none;
     letter-spacing: 0.05em;
+    padding: 0;
   }
-  .wikt-link a:hover { color: var(--accent-mid); text-decoration: underline; }
+  .wikt-btn:hover { color: var(--accent-mid); text-decoration: underline; }
 
   @keyframes spin { to { transform: rotate(360deg); } }
   .spinner {
@@ -374,12 +378,32 @@ function renderDefinitions(word, latinEntries) {
 
   const linkDiv = document.createElement('div');
   linkDiv.className = 'wikt-link';
-  linkDiv.innerHTML = `<a href="https://en.wiktionary.org/wiki/${encodeURIComponent(word)}#Latin" target="_blank" rel="noopener">View full entry on Wiktionary ↗</a>`;
+  const wiktBtn = document.createElement('button');
+  wiktBtn.className = 'wikt-btn';
+  wiktBtn.textContent = 'View full entry on Wiktionary ↗';
+  wiktBtn.addEventListener('click', () => {
+    window.open(`https://en.wiktionary.org/wiki/${encodeURIComponent(word)}#Latin`, '_blank', 'noopener,noreferrer');
+  });
+  linkDiv.appendChild(wiktBtn);
   results.appendChild(linkDiv);
 }
 
 function escHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function interceptLinks(container) {
+  container.querySelectorAll('a[href]').forEach(a => {
+    const href = a.getAttribute('href');
+    a.removeAttribute('href');
+    a.style.cursor = 'pointer';
+    a.style.color = 'var(--accent-mid)';
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const url = href.startsWith('http') ? href : 'https://en.wiktionary.org' + href;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    });
+  });
 }
 
 async function lookup(word) {
@@ -427,6 +451,7 @@ async function lookup(word) {
   }
 
   renderDefinitions(trimmed, latinEntries);
+  interceptLinks(results);
 }
 
 btn.addEventListener('click', () => lookup(input.value));
